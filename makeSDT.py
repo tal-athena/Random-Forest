@@ -4,9 +4,8 @@ from sklearn.ensemble import RandomForestRegressor
 import pydot
 import numpy as np
 from joblib import load
-
-# flag: true(full), false(three)
-def predict(rf, test_features, test_labels, flag):
+# is_full: true(full), false(three)
+def predict(rf, test_features, test_labels, is_full):
     # Use the forest's predict method on the test data
     predictions = rf.predict(test_features)
 
@@ -18,31 +17,31 @@ def predict(rf, test_features, test_labels, flag):
 
     # Calculate mean absolute percentage error (MAPE)
     print("testlabels", test_labels)
-    flag = False
+    is_full = False
     for testV in test_labels:
         print("testlabels", testV)
         if testV == 0:
-            flag = True
+            is_full = True
             break
-    if flag == False:
+    if is_full == False:
         mape = 100 * (errors / test_labels)
 
         # Calculate and display accuracy
         accuracy = 100 - np.mean(mape)
-        if flag == True:
+        if is_full == True:
             print('Accuracy For Full:', round(accuracy, 2), '%.')
-        if flag == True:
+        if is_full == True:
             print('Accuracy For Three Levels:', round(accuracy, 2), '%.')
 
-# flag: true(full), false(three)
-def makeSDT(rf, srtRootDirectory, featureTrain_list, train_features, train_labels, flag):
+# is_full: true(full), false(three)
+def makeSDT(rf, srtRootDirectory, featureTrain_list, train_features, train_labels, is_full):
     # Pull out one tree from the forest
     tree = rf.estimators_[5]
 
-    if flag == True:
+    if is_full == True:
         strDotPath = srtRootDirectory + '\\OutputImages\\tree.dot'
         strImgPath = srtRootDirectory + '\\OutputImages\\tree.png'
-    if flag == False:
+    if is_full == False:
         strDotPath = srtRootDirectory + '\\OutputImages\\small_tree.dot'
         strImgPath = srtRootDirectory + '\\OutputImages\\small_tree.png'
 
@@ -54,9 +53,9 @@ def makeSDT(rf, srtRootDirectory, featureTrain_list, train_features, train_label
 
     # Write graph to a png file
     graph.write_png(strImgPath); 
-    if flag == True:
+    if is_full == True:
         print('The depth of this full tree is:', tree.tree_.max_depth)
-    if flag == False:
+    if is_full == False:
         print('The depth of this three levels tree is:', tree.tree_.max_depth)
 
 def makeFull(fullModelPath, srtRootDirectory, featureTrain_list, train_features, train_labels, test_features, test_labels):
