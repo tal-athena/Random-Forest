@@ -16,22 +16,14 @@ def predict(rf, test_features, test_labels, is_full):
     print('Mean Absolute Error For Full:', round(np.mean(errors), 2), 'degrees.')
 
     # Calculate mean absolute percentage error (MAPE)
-    print("testlabels", test_labels)
-    is_full = False
-    for testV in test_labels:
-        print("testlabels", testV)
-        if testV == 0:
-            is_full = True
-            break
-    if is_full == False:
-        mape = 100 * (errors / test_labels)
+    mape = 100 * (errors / test_labels)
 
-        # Calculate and display accuracy
-        accuracy = 100 - np.mean(mape)
-        if is_full == True:
-            print('Accuracy For Full:', round(accuracy, 2), '%.')
-        if is_full == True:
-            print('Accuracy For Three Levels:', round(accuracy, 2), '%.')
+    # Calculate and display accuracy
+    accuracy = 100 - np.mean(mape)
+    if is_full == True:
+        print('Accuracy For Full:', round(accuracy, 2), '%.')
+    if is_full == True:
+        print('Accuracy For Three Levels:', round(accuracy, 2), '%.')
 
 # is_full: true(full), false(three)
 def makeSDT(rf, srtRootDirectory, featureTrain_list, train_features, train_labels, is_full):

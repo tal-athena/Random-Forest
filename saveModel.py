@@ -12,9 +12,9 @@ def getModelPath(srtRootDirectory, train_features, train_labels, flag):
     # Train the model on training data (data must not null)
     rf.fit(train_features, train_labels);
     if flag == True:
-        strPath = srtRootDirectory + '\\OutputImages\\TrainModel_Full.joblib'
+        strPath = srtRootDirectory + '\\TrainModel_Full.joblib'
     if flag == False:
-        strPath = srtRootDirectory + '\\OutputImages\\TrainModel_3levels.joblib'
+        strPath = srtRootDirectory + '\\TrainModel_3levels.joblib'
     dump(rf, strPath)
     return strPath
 

@@ -85,12 +85,12 @@ def main():
     featuresTest = fetchDataFrame.fetchData(parameters, database, True)
     
     #Display the testing data and training data
-    print("featuresTrain", featuresTrain)
-    print("featuresTest", featuresTest)    
+    print("featuresTrain\n", featuresTrain)
+    print("featuresTest\n", featuresTest)    
 
     #Descriptive statistics for each column
-    print("featuresTrainDescribe",featuresTrain.describe())
-    print("featuresTestDescribe",featuresTest.describe())
+    print("featuresTrainDescribe\n",featuresTrain.describe())
+    print("featuresTestDescribe\n",featuresTest.describe())
     
 
     #Visualization of testdata and train data
@@ -100,8 +100,8 @@ def main():
     featuresTrain = pd.get_dummies(featuresTrain)
     featuresTest = pd.get_dummies(featuresTest)
     #display test data and train data after one-hot encoding
-    print("one-hot encoding featuresTrain", featuresTrain)
-    print("one-hot encoding featuresTest", featuresTest)
+    print("one-hot encoding featuresTrain\n", featuresTrain)
+    print("one-hot encoding featuresTest\n", featuresTest)
     
 
     featuresTest, featuresTrain = remove_unnes_field(featuresTest, featuresTrain)
@@ -118,7 +118,9 @@ def main():
     # Remove the labels from the features
     # axis 1 refers to the columns
     featuresTrain= featuresTrain.drop('_target_', axis = 1)
+    featuresTrain= featuresTrain.drop('target_binary', axis = 1)
     featuresTest= featuresTest.drop('_target_', axis = 1)
+    featuresTest= featuresTest.drop('target_binary', axis = 1)
     featuresTrain= featuresTrain.drop('ED_ENC_NUM', axis = 1)
     featuresTest= featuresTest.drop('ED_ENC_NUM', axis = 1)
 
