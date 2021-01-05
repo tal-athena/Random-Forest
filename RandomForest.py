@@ -3,6 +3,8 @@ import numpy as np
 import sys
 import os
 import os.path as P
+import json
+
 # Import the model we are using
 from sklearn.ensemble import RandomForestRegressor
 # Import tools needed for visualization
@@ -48,6 +50,15 @@ def remove_unnes_field(featuresTest, featuresTrain):
 
     return featuresTest, featuresTrain
 
+def check_features(featuresTest ,train_features):
+    for train in train_features:
+        flag = False
+        for test in featuresTest:
+            if train == test:
+                flag = True
+        if flag == False:
+            return False
+    return True
 def main():
     # try:
     print("console")
@@ -80,56 +91,110 @@ def main():
 
     print("Parameters: %s" % (parameters))
 
+    file = open(parameters, mode='r')
+    json_string = file.read()
+    file.close()
+    parameter = json.loads(json_string)
+
+    #check possiblity of using pre trained classifier
+    if 'usePretrainedClassifier' in parameter and parameter['usePretrainedClassifier'] == True:
+        if 'preTrainedClassifierDir' not in parameter:
+            print('preTrainedClassifierDir field is not exist')
+			return
+        if P.exists(P.join(parameter['preTrainedClassifierDir'], 'featureTrain_list.csv')) == False:
+            print('featureTrain_list.csv file is not exist')
+			return
+        if P.exists(P.join(parameter['preTrainedClassifierDir'], 'IDTrain.csv')) == False:
+            print('IDTrain.csv file is not exist')
+			return
+        if P.exists(P.join(parameter['preTrainedClassifierDir'], 'train_features.csv')) == False:
+            print('train_features.csv file is not exist')
+			return
+        if P.exists(P.join(parameter['preTrainedClassifierDir'], 'train_labels.csv')) == False:
+            print('train_labels.csv file is not exist')
+			return
+        if P.exists(P.join(parameter['preTrainedClassifierDir'], 'TrainModel_3levels.joblib')) == False:
+            print('TrainModel_3levels.joblib file is not exist')
+			return
+        if P.exists(P.join(parameter['preTrainedClassifierDir'], 'TrainModel_Full.joblib')) == False:
+            print('TrainModel_Full.joblib file is not exist')
+			return
     #Fetch the data for testing and training from DB    
-    featuresTrain = fetchDataFrame.fetchData(parameters, database, False)
+    if 'usePretrainedClassifier' not in parameter or parameter['usePretrainedClassifier'] == False:
+        featuresTrain = fetchDataFrame.fetchData(parameters, database, False)
+        print("featuresTrain\n", featuresTrain)
+        print("featuresTrainDescribe\n",featuresTrain.describe())
+
     featuresTest = fetchDataFrame.fetchData(parameters, database, True)
     
     #Display the testing data and training data
-    print("featuresTrain\n", featuresTrain)
     print("featuresTest\n", featuresTest)    
 
     #Descriptive statistics for each column
-    print("featuresTrainDescribe\n",featuresTrain.describe())
+    
     print("featuresTestDescribe\n",featuresTest.describe())
     
-
-    #Visualization of testdata and train data
-    drawPlt_TrainAndTest.draw(srtRootDirectory, featuresTest, featuresTrain)
+    if 'usePretrainedClassifier' not in parameter or parameter['usePretrainedClassifier'] == False:
+        #Visualization of testdata and train data
+        drawPlt_TrainAndTest.draw(srtRootDirectory, featuresTest, featuresTrain)
 
     #Data Preparation(One-Hot Encoding)
-    featuresTrain = pd.get_dummies(featuresTrain)
+    if 'usePretrainedClassifier' not in parameter or parameter['usePretrainedClassifier'] == False:
+        featuresTrain = pd.get_dummies(featuresTrain)
+        print("one-hot encoding featuresTrain\n", featuresTrain)
+        
     featuresTest = pd.get_dummies(featuresTest)
     #display test data and train data after one-hot encoding
-    print("one-hot encoding featuresTrain\n", featuresTrain)
+    
     print("one-hot encoding featuresTest\n", featuresTest)
     
-
-    featuresTest, featuresTrain = remove_unnes_field(featuresTest, featuresTrain)
-    print("newfeaturesTrain",len(featuresTrain.columns))
-    print("newfeaturesTest",len(featuresTest.columns))
-    
+    if 'usePretrainedClassifier' not in parameter or parameter['usePretrainedClassifier'] == False:
+        featuresTest, featuresTrain = remove_unnes_field(featuresTest, featuresTrain)
+        print("newfeaturesTrain",len(featuresTrain.columns))
+        print("newfeaturesTest",len(featuresTest.columns))
+    else:
+        file = open(P.join(parameter['preTrainedClassifierDir'], 'featureTrain_list.csv'), mode='r')
+        feature_string = file.read()
+        featureTrain_list = feature_string.split(',')
+        if check_features(featuresTest, featureTrain_list) == False:
+            print('Not all trained features are used in test data')
+            return
     # Labels and IDs are the values we want to predict
-    labelsTrain = np.array(featuresTrain['_target_'])
-    IDTrain = np.array(featuresTrain['ED_ENC_NUM'])
+    if 'usePretrainedClassifier' not in parameter or parameter['usePretrainedClassifier'] == False:
+        labelsTrain = np.array(featuresTrain['_target_'])
+        IDTrain = np.array(featuresTrain['ED_ENC_NUM'])
+    else:
+        labelsTrain = np.genfromtxt(P.join(parameter['preTrainedClassifierDir'], 'train_labels.csv'), delimiter = ',')
+        IDTrain = np.genfromtxt(P.join(parameter['preTrainedClassifierDir'], 'IDTrain.csv'), delimiter = ',')
+
     labelsTest = np.array(featuresTest['_target_'])
     IDTest = np.array(featuresTest['ED_ENC_NUM'])
     print("IDTest", IDTest)
 
     # Remove the labels from the features
     # axis 1 refers to the columns
-    featuresTrain= featuresTrain.drop('_target_', axis = 1)
-    featuresTrain= featuresTrain.drop('target_binary', axis = 1)
+    if 'usePretrainedClassifier' not in parameter or parameter['usePretrainedClassifier'] == False:
+        featuresTrain= featuresTrain.drop('_target_', axis = 1)
+        featuresTrain= featuresTrain.drop('target_binary', axis = 1)
+        featuresTrain= featuresTrain.drop('ED_ENC_NUM', axis = 1)
+
     featuresTest= featuresTest.drop('_target_', axis = 1)
     featuresTest= featuresTest.drop('target_binary', axis = 1)
-    featuresTrain= featuresTrain.drop('ED_ENC_NUM', axis = 1)
     featuresTest= featuresTest.drop('ED_ENC_NUM', axis = 1)
 
     # Saving feature names for later use
-    featureTrain_list = list(featuresTrain.columns)
+    if 'usePretrainedClassifier' not in parameter or parameter['usePretrainedClassifier'] == False:
+        featureTrain_list = list(featuresTrain.columns)
+  
+
     featureTest_list = list(featuresTest.columns)
 
     # Convert to numpy array
-    featuresTrain = np.array(featuresTrain)
+    if 'usePretrainedClassifier' not in parameter or parameter['usePretrainedClassifier'] == False:
+        featuresTrain = np.array(featuresTrain)
+    else:
+        featuresTrain = np.genfromtxt(P.join(parameter['preTrainedClassifierDir'], 'train_features.csv'), delimiter = ',')
+
     featuresTest = np.array(featuresTest)
 
     print("featuresTrain - numpy array")
@@ -141,11 +206,13 @@ def main():
     # https://scikit-learn.org/stable/modules/impute.html#multivariate-feature-imputation
     imp = IterativeImputer(max_iter=10, random_state=0)
     imp.fit(featuresTrain)
-    
-    featuresTrain = np.round(imp.transform(featuresTrain))
+
+    if 'usePretrainedClassifier' not in parameter or parameter['usePretrainedClassifier'] == False:
+        featuresTrain = np.round(imp.transform(featuresTrain))
+        print("featuresTrain - Missing value added")
+        print(featuresTrain)
     featuresTest = np.round(imp.transform(featuresTest))
-    print("featuresTrain - Missing value added")
-    print(featuresTrain)
+   
     print("featuresTest - Missing value")
     print(featuresTest)
 
@@ -166,8 +233,12 @@ def main():
     # Improve Model if Necessary
     rf_new = RandomForestRegressor(n_estimators = 100, criterion = 'mse', max_depth = None, min_samples_split = 2, min_samples_leaf = 1)
 
-    # Save the model in file
-    fullModelPath, threeLevelModelPath = saveModel.save(srtRootDirectory, train_features, train_labels)
+    if 'usePretrainedClassifier' in parameter and 'preTrainedClassifierDir' in parameter and parameter['usePretrainedClassifier'] == True:
+        fullModelPath = P.join(parameter['preTrainedClassifierDir'], 'TrainModel_Full.joblib')
+        threeLevelModelPath = P.join(parameter['preTrainedClassifierDir'], 'TrainModel_3levels.joblib')
+    else:
+        # Save the model in file
+        fullModelPath, threeLevelModelPath = saveModel.save(srtRootDirectory, train_features, train_labels, featureTrain_list, IDTrain)
 
     # Visualizing a Single Decision Tree
     makeSDT.makeFull(fullModelPath, srtRootDirectory, featureTrain_list, train_features, train_labels, test_features, test_labels)
